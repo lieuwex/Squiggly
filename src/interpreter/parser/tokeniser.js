@@ -84,13 +84,17 @@ const DEBUG = false;
 
 		function error (errtype, lineNumber, charIndex) {
 			var str = "";
-			if (lineNumber) str += "Error at line " + lineNumber;
-			if (charIndex) str += ", character " + charIndex;
-			if (lineNumber || charIndex) str += " ";
+			var prefixes = [];
+
+			if (lineNumber != null) prefixes.push("at line " + lineNumber);
+			if (charIndex != null) prefixes.push("at character " + charIndex);
+
+			str += prefixes.join(", ");
+			if (prefixes.length) str += ": ";
 
 			switch (errtype) {
 			case "string_not_ended":
-				str += "String not ended correctly.";
+				str += "This string is not ended correctly.";
 			}
 
 			throw new Error(str);
@@ -104,7 +108,11 @@ const DEBUG = false;
 				// This will be hint when an unknown symbol or EOL is hit.
 				function tryFinishCurrentWalk (line, char) {
 					if (_inString) {
-						error("string_not_ended", line, char);
+						error(
+							"string_not_ended",
+							line,
+							char - _currentStringContent.length
+						);
 					} else if (_currentWalkIndex === 0) {
 						// We aren't in a walk.
 						return false;
@@ -147,9 +155,9 @@ const DEBUG = false;
 
 					if (DEBUG) console.log(i, char, _currentWalkIndex, tokens, (token&&token[1]), _currentWalkedOn);
 
-					if (token != null) {
+					if (token != null) { // Token found
 						if (token[1] === "string") {
-							if (_inString) {
+							if (_inString) { // We were in a string and token is string -> string ended.
 								_inString = false;
 								this.tokens.push({
 									token: "string",
@@ -157,10 +165,10 @@ const DEBUG = false;
 									start: i - _currentStringContent.length - 1,
 									end: i
 								});
-							} else {
+							} else { // We weren't in a string, token is string -> string started.
 								_inString = true;
 							}
-						} else if (!_inString) {
+						} else if (!_inString) { // Non-string token.
 							this.tokens.push({
 								token: token[1],
 								start: i - _currentWalkIndex,
@@ -168,10 +176,14 @@ const DEBUG = false;
 							});
 						}
 						resetCurrentWalk();
-					} else if (_inString) {
+					} else if (_inString) { // Add string content
 						_currentStringContent += char;
-					} else {
-						if (!tryFinishCurrentWalk()) {
+					} else { // No token.
+						// Try to finish previous walk.
+						var walkEnded = tryFinishCurrentWalk();
+						if (walkEnded) {
+							resetCurrentWalk();
+						} else {
 							if (_currentWalkIndex === 0) {
 								_currentWalkStart = i;
 							}
@@ -180,8 +192,6 @@ const DEBUG = false;
 								_currentWalkPossibleTokens = _.zipObject(tokens);
 								_currentWalkedOn.push(char);
 							}
-						} else {
-							resetCurrentWalk();
 						}
 					}
 				}

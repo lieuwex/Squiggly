@@ -22,7 +22,7 @@
 	"use strict";
 
 	var minimist = require("minimist");
-	var interperter = require("./interperter/");
+	var interpreter = require("./interpreter/");
 	var argv = minimist(process.argv.slice(2));
 	var fs = require("fs");
 
@@ -40,10 +40,10 @@
 	} else if (argv.c || argv.command) { //inline commands
 		var command = argv.c || argv.command;
 
-		runner = interperter(command.split("\n"));
+		runner = interpreter(command.split("\n"));
 	} else if (argv._.length > 0) { //files
 		fs.readFile(argv._[0], function (file) {
-			runner = interperter(file.split("\n"));
+			runner = interpreter(file.split("\n"));
 		});
 	} else { //repl
 		while(prompt()) {}
