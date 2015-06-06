@@ -102,7 +102,7 @@ module.exports = function (lines) {
 	var tokeniser = new Tokeniser();
 
 	lines.forEach(function (line) {
-		tokeniser.walkOverString(line);
+		tokeniser.walkOverLine(line);
 	});
 
 	console.log(tokeniser.tokens);

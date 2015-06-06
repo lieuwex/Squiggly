@@ -103,7 +103,7 @@ const DEBUG = false;
 		return {
 			tokens: [],
 
-			walkOverString: function (str, lineNumber) {
+			walkOverLine: function (str, lineNumber) {
 				var _tokens = this.tokens;
 				// This will be hint when an unknown symbol or EOL is hit.
 				function tryFinishCurrentWalk (line, char) {

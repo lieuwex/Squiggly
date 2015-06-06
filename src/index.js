@@ -39,11 +39,13 @@
 		printHelp();
 	} else if (argv.c || argv.command) { //inline commands
 		var command = argv.c || argv.command;
-
-		runner = interpreter(command.split("\n"));
-	} else if (argv._.length > 0) { //files
-		fs.readFile(argv._[0], function (file) {
-			runner = interpreter(file.split("\n"));
+		var lines = command.split("\\n");
+		runner = interpreter(lines);
+	} else if (argv._.length > 0) {
+		argv._.forEach(function (arg) {
+			fs.readFile(arg, function (file) {
+				runner = interpreter(file.split("\n"));
+			});
 		});
 	} else { //repl
 		while(prompt()) {}
