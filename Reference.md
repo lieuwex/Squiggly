@@ -9,6 +9,17 @@ a {
 }
 ```
 
+Semicolons
+---
+You can put them at the end of the line, if you want. But it's prefered to now
+to. Only use semicolons when you want to use multiple statements on one line.
+
+e.g `a(); b()`.
+
+Indention
+---
+Indent (or not) the hell you want, it doesn't matter.
+
 Scopes
 ---
 
