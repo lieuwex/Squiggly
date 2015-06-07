@@ -84,7 +84,6 @@ const DEBUG = false;
 		var _currentWalkUnknown = false;
 
 		var _currentStringInfo = {
-			inInterpolation: false,
 			// The string token that started this string. If null we're not in a string.
 			token: null,
 			content: "",
@@ -92,7 +91,6 @@ const DEBUG = false;
 			end: null,
 
 			reset: function () {
-				this.inInterpolation = false;
 				this.token = null;
 				this.content = "";
 				this.start = null;
@@ -133,6 +131,9 @@ const DEBUG = false;
 			case "NOT_IN_INTERPOLATION_STRING":
 				str += "You can only interpolate in a string of one of ['" + interpolationStrings.join("', '") + "'] string tokens.";
 				break;
+			case "INTERPOLATION_NOT_ENDED":
+				str += "No corresponding token found for this interpolation.";
+				break;
 			default:
 				str += errType;
 				break;
@@ -149,7 +150,7 @@ const DEBUG = false;
 
 				// This will be hint when an unknown symbol or EOL is hit.
 				var tryFinishCurrentWalk = function (char) {
-					if (inString() && !_currentStringInfo.inInterpolation) {
+					if (inString()) {
 						error(
 							"string_not_ended",
 							lineNumber,
@@ -190,8 +191,8 @@ const DEBUG = false;
 					});
 				}
 
-				for (var i = 0; i < str.length; i++) {
-					var char = str[i];
+				for (var charPos = 0; charPos < str.length; charPos++) {
+					var char = str[charPos];
 					var token = null;
 
 					var tokens = findTokens(function (token, tokenType) {
@@ -208,7 +209,7 @@ const DEBUG = false;
 
 					if (DEBUG) {
 						console.log(
-							i,
+							charPos,
 							char,
 							_currentWalkIndex,
 							tokens,
@@ -220,11 +221,44 @@ const DEBUG = false;
 					if (token != null) { // Token found
 						if (token[1] === "interpolate_string") {
 							if (_.contains(interpolationStrings, _currentStringInfo.token)) {
-								_currentStringInfo.inInterpolation = !_currentStringInfo.inInterpolation;
+								var interpolateStart     = charPos + 1,
+								    interpolateEnd       = null,
+									interpolationContent = "";
+
+								for (var i = interpolateStart; i < str.length; i++) {
+									var char = str[i];
+									if (tokensMap[char] === "interpolate_string") {
+										interpolateEnd = i;
+										break;
+									} else {
+										interpolationContent += char;
+									}
+								}
+								if (interpolateEnd == null) {
+									error(
+										"interpolation_not_ended",
+										lineNumber,
+										charPos
+									);
+								}
+
+								var tokeniser = new Tokeniser();
+								tokeniser.walkOverLine(interpolationContent);
+								tokeniser.tokens.forEach(function (token) {
+									_tokens.push(_.extend(token, {
+										// The position of the new tokeniser resets at index 0.
+										// This is not inline with the string we're in, adding
+										// the starting position of the interpolation to the
+										// start and end of every token should fix it.
+										start: token.start + interpolateStart,
+										end: token.end + interpolateStart
+									}));
+								});
+								charPos = interpolateEnd; // skip over interpolation
 							} else if (inString()) {
-								error("not_in_interpolation_string", lineNumber, i);
+								error("not_in_interpolation_string", lineNumber, charPos);
 							} else {
-								error("not_in_string", lineNumber, i);
+								error("not_in_string", lineNumber, charPos);
 							}
 						} else if (token[1] === "string" && !_currentStringInfo.inInterpolation) {
 							if (_currentStringInfo.token === char) { // We were in a string and token is the same as the current string's token -> string ended.
@@ -234,25 +268,25 @@ const DEBUG = false;
 									token: "string",
 									content: _currentStringInfo.content,
 									start: _currentStringInfo.start,
-									end: i
+									end: charPos
 								});
 							} else { // We weren't in a string, token is string -> string started.
 								_currentStringInfo.token = char;
-								_currentStringInfo.start = i;
+								_currentStringInfo.start = charPos;
 							}
-						} else if (!inString() || _currentStringInfo.inInterpolation) { // Non-string token.
+						} else if (!inString()) { // Non-string token.
 							this.tokens.push({
 								token: token[1],
-								start: i - _currentWalkIndex,
-								end: i
+								start: charPos - _currentWalkIndex,
+								end: charPos
 							});
 						}
 
 						resetCurrentWalk();
 						continue;
-					} else if (inString() && !_currentStringInfo.inInterpolation) { // Add string content
+					} else if (inString()) { // Add string content
 						if (char === '\\') {
-							var nextChar = str[i + 1];
+							var nextChar = str[charPos + 1];
 
 							if (nextChar === '\\') {
 								_currentStringInfo.content += '\\';
@@ -268,14 +302,14 @@ const DEBUG = false;
 								continue;
 							}
 
-							i++;
+							charPos++;
 						} else {
 							_currentStringInfo.content += char;
 						}
 						continue;
 					} else if (tokens.length === 0 && !_currentWalkUnknown) { // No token.
 						// Try to finish previous walk.
-						var walkEnded = tryFinishCurrentWalk(i);
+						var walkEnded = tryFinishCurrentWalk(charPos);
 						if (walkEnded) {
 							resetCurrentWalk();
 							continue;
@@ -283,11 +317,11 @@ const DEBUG = false;
 					}
 
 					if (_currentWalkIndex === 0) {
-						_currentWalkStart = i;
+						_currentWalkStart = charPos;
 					}
 					if (tokenStartsWith(char)) {
 						if (_currentWalkUnknown) {
-							tryFinishCurrentWalk(i);
+							tryFinishCurrentWalk(charPos);
 							resetCurrentWalk();
 						}
 
