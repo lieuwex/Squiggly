@@ -11,7 +11,7 @@ a {
 
 Semicolons
 ---
-You can put them at the end of the line, if you want. But it's prefered to now
+You can put them at the end of the line, if you want. But it's prefered to not
 to. Only use semicolons when you want to use multiple statements on one line.
 
 e.g `a(); b()`.
