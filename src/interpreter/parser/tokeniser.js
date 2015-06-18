@@ -20,7 +20,7 @@
 
 const DEBUG = false;
 
-(function () {
+(function (require, module) {
 	"use strict";
 
 	var _ = require("lodash");
@@ -123,12 +123,20 @@ const DEBUG = false;
 					var tokens = _(tokensMap)
 						.pairs()
 						.filter(function (pair) {
-							var x = true;
-							if (/\w/.test(pair[0][0])) { // for keyword type statments we want a non word char before them.
-								x = currentChar === 0 ||
-									/\W/.test(str[currentChar - 1])
+							var t = pair[0];
+
+							if (t[0] === char) {
+								// for keyword type statments we want a non word char before them.
+								if (/\w/.test(t[0])) { // keyword type token
+									return (
+										// non word char before token
+										(currentChar === 0 || /\W/.test(str[currentChar - 1])) &&
+										// non word char after token
+										(currentChar + t.length === str.length || /\W/.test(str[currentChar + t.length]))
+									);
+								}
+								return true;
 							}
-							return x && pair[0][0] === char;
 						})
 						.sortBy(function (pair) {
 							return pair[0].length;
@@ -219,7 +227,7 @@ const DEBUG = false;
 						}
 					});
 
-					if (!anyToken && !/\s/.test(char)) {
+					if (!anyToken && !/\s/.test(char) && (_currentWord.length > 0 || /\w/.test(char))) {
 						_currentWord += char;
 					} else if (_currentWord.length > 0) {
 						_tokens.push({
@@ -239,4 +247,4 @@ const DEBUG = false;
 	}
 
 	module.exports = Tokeniser;
-})();
+})(require, module);
