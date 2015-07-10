@@ -236,7 +236,7 @@
 						_tokens.push({
 							token: 'word',
 							content: _currentWord,
-							begin: currentChar - _currentWord.length,
+							begin: currentChar - _currentWord.length + 1,
 							end: currentChar
 						});
 
