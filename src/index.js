@@ -27,20 +27,30 @@
 	var fs = require("fs");
 
 	function printHelp () {
-		console.log("'{}' [options] <arguments>");
+		console.log(
+			"'{}' [options] <arguments>\n" +
+			"Flags:\n" +
+			"\t--command/-c <str> | Executes `str` as {} code."
+		);
 	}
 
 	function prompt () {
 		// readline?
 	}
 
+	var help = argv.h || argv.help;
+	var command = argv.c || argv.command;
 	var runner;
-	if (argv.h || argv.help) { // help
+
+	if (help) { // help
 		printHelp();
-	} else if (argv.c || argv.command) { //inline commands
-		var command = argv.c || argv.command;
-		var lines = command.split("\\n");
-		runner = interpreter(lines);
+	} else if (command) { // inline commands
+		if (typeof command === "string") {
+			var lines = command.split("\\n");
+			runner = interpreter(lines);
+		} else {
+			printHelp();
+		}
 	} else if (argv._.length > 0) {
 		argv._.forEach(function (arg) {
 			fs.readFile(arg, function (file) {
