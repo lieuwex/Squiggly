@@ -69,12 +69,6 @@
 
 	var interpolationStrings = ['"'];
 
-	function findTokens (func, tokens) {
-		return _(tokens || tokensMap).pairs().filter(function (pair) {
-			return func.apply(this, pair);
-		}).value();
-	}
-
 	function Tokeniser () {
 		var _currentWord = '';
 
@@ -194,6 +188,14 @@
 								regResult[0] !== '\\' &&
 								regResult[regResult.length - 2] !== '\\'
 							) {
+								if (!_.contains(interpolationStrings, char)) {
+									error(
+										'not_in_interpolation_string',
+										lineNumber,
+										begin
+									);
+								}
+
 								var interpolation = regResult[0];
 								var content = interpolation.substring(1, interpolation.length - 1);
 								var interpolateStart = str.indexOf(interpolation) + 1;
