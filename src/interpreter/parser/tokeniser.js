@@ -18,8 +18,6 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-const DEBUG = false;
-
 (function (require, module) {
 	"use strict";
 
@@ -31,7 +29,7 @@ const DEBUG = false;
 	//	   see #1) (or at least handle whitespace).
 	//	 ~ Default type for normal words.
 	//	 ~ Don't ignore escaped strings, instead give them their own token and
-	//	   during processing error when they're used outside of a string.
+	//	   error (during processing) when they're used outside of a string.
 	//	 - Error tolerate parsing.
 
 	var tokensMap = {
@@ -56,6 +54,7 @@ const DEBUG = false;
 		"if": "if",
 		"try": "try",
 		"`": "interpolate_string",
+		"+": "plus",
 
 		// ignore tokens
 
@@ -119,6 +118,7 @@ const DEBUG = false;
 
 				for (var currentChar = 0; currentChar < str.length; currentChar++) {
 					var char = str[currentChar];
+					var isLast = currentChar === str.length - 1;
 
 					var tokens = _(tokensMap)
 						.pairs()
@@ -227,9 +227,12 @@ const DEBUG = false;
 						}
 					});
 
+					var isWord = false;
 					if (!anyToken && !/\s/.test(char) && (_currentWord.length > 0 || /\w/.test(char))) {
 						_currentWord += char;
-					} else if (_currentWord.length > 0) {
+						isWord = true;
+					}
+					if ((!isWord || isLast) && _currentWord.length > 0) {
 						_tokens.push({
 							token: 'word',
 							content: _currentWord,
