@@ -230,17 +230,26 @@
 					});
 
 					var isWord = false;
-					if (!anyToken && !/\s/.test(char) && (_currentWord.length > 0 || /\w/.test(char))) {
+					if (!anyToken && !/\s/.test(char)) {
 						_currentWord += char;
 						isWord = true;
 					}
 					if ((!isWord || isLast) && _currentWord.length > 0) {
-						_tokens.push({
-							token: 'word',
-							content: _currentWord,
-							begin: currentChar - _currentWord.length + 1,
-							end: currentChar
-						});
+						if (/^[\.\d]+$/.test(_currentWord)) {
+							_tokens.push({
+								token: 'number',
+								content: +_currentWord,
+								begin: currentChar - _currentWord.length + 1,
+								end: currentChar
+							});
+						} else {
+							_tokens.push({
+								token: 'word',
+								content: _currentWord,
+								begin: currentChar - _currentWord.length + 1,
+								end: currentChar
+							});
+						}
 
 						_currentWord = '';
 					}
